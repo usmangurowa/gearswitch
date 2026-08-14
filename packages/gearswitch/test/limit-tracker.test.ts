@@ -269,4 +269,75 @@ describe('LimitTracker', () => {
       expect(await tracker.isAvailable('m1')).toBe(true);
     });
   });
+
+  describe('status() equivalence with isAvailable under partial corruption', () => {
+    it('reports benchedUntil with available:false when headers are corrupt (bench still short-circuits isAvailable)', async () => {
+      const map = new Map<string, string>();
+      const store: Store = {
+        get: async (key) => map.get(key) ?? null,
+        set: async (key, value) => {
+          map.set(key, value);
+        },
+      };
+      const tracker = makeTracker({ store });
+      const benchedUntil = Date.now() + 60_000;
+      await store.set('gearswitch:bench:m1', String(benchedUntil));
+      await store.set('gearswitch:headers:m1', 'not-json{{{');
+
+      expect(await tracker.isAvailable('m1')).toBe(false);
+      expect(await tracker.status('m1')).toEqual({
+        available: false,
+        benchedUntil,
+      });
+    });
+
+    it('treats a "null" headers payload as no snapshot without throwing', async () => {
+      const store: Store = {
+        get: async (key) => (key.includes(':headers:') ? 'null' : null),
+        set: async () => {},
+      };
+      const tracker = makeTracker({ store });
+
+      expect(await tracker.isAvailable('m1')).toBe(true);
+      const status = await tracker.status('m1');
+      expect(status).toEqual({ available: true });
+      expect(status).not.toHaveProperty('headerLimits');
+    });
+
+    it('reports benchedUntil with available:false when the headers read rejects (bench read still succeeds)', async () => {
+      const benchedUntil = Date.now() + 60_000;
+      const store: Store = {
+        get: async (key) => {
+          if (key.includes(':bench:')) return String(benchedUntil);
+          if (key.includes(':headers:')) {
+            throw new Error('headers read failed');
+          }
+          return null;
+        },
+        set: async () => {},
+      };
+      const tracker = makeTracker({ store });
+
+      expect(await tracker.status('m1')).toEqual({
+        available: false,
+        benchedUntil,
+      });
+    });
+
+    it('drops a malformed header dimension shape without throwing (matches isAvailable)', async () => {
+      const store: Store = {
+        get: async (key) =>
+          key.includes(':headers:')
+            ? JSON.stringify({ requests: { remaining: 'x', expiresAt: 123 } })
+            : null,
+        set: async () => {},
+      };
+      const tracker = makeTracker({ store });
+
+      expect(await tracker.isAvailable('m1')).toBe(true);
+      const status = await tracker.status('m1');
+      expect(status).toEqual({ available: true });
+      expect(status).not.toHaveProperty('headerLimits');
+    });
+  });
 });

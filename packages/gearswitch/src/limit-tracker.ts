@@ -1,5 +1,5 @@
 import { parseRateLimitHeaders } from './header-parsers';
-import type { Limits, Store } from './types';
+import type { Limits, ModelStatus, Store } from './types';
 
 const MINUTE_MS = 60_000;
 const DAY_MS = 86_400_000;
@@ -25,6 +25,20 @@ interface DimensionSnapshot {
 interface HeaderSnapshot {
   requests?: DimensionSnapshot | undefined;
   tokens?: DimensionSnapshot | undefined;
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+/** A stored `[timestamp, tokenCount]` pair with both members numeric and finite. */
+function isFiniteTokenPair(value: unknown): value is [number, number] {
+  return (
+    Array.isArray(value) &&
+    value.length === 2 &&
+    isFiniteNumber(value[0]) &&
+    isFiniteNumber(value[1])
+  );
 }
 
 export interface RecordSuccessInput {
@@ -71,9 +85,15 @@ export class LimitTracker {
    */
   async isAvailable(modelKey: string, limits?: Limits): Promise<boolean> {
     try {
-      if (await this.isBenched(modelKey)) return false;
-      if (await this.isNearHeaderLimit(modelKey)) return false;
-      if (limits && (await this.isNearDeclaredLimit(modelKey, limits))) {
+      if ((await this.readBenchExpiry(modelKey)) !== undefined) return false;
+      const snapshot = await this.readHeaderSnapshot(modelKey);
+      if (snapshot !== undefined && this.headerSnapshotNearLimit(snapshot)) {
+        return false;
+      }
+      if (
+        limits &&
+        this.usageNearLimit(await this.readUsage(modelKey), limits)
+      ) {
         return false;
       }
       return true;
@@ -83,20 +103,171 @@ export class LimitTracker {
     }
   }
 
-  private async isBenched(modelKey: string): Promise<boolean> {
+  /**
+   * Run a single store read for `status()`, degrading a thrown error
+   * to `undefined` so one corrupt/rejected key can't poison the other
+   * dimensions read alongside it in the same `Promise.all`.
+   */
+  private async tryRead<T>(read: () => Promise<T>): Promise<T | undefined> {
+    try {
+      return await read();
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
+   * Read-only per-model detail: bench expiry, active header-snapshot
+   * dimensions, and (when `limits` is declared) self-counted window
+   * usage. Each store key is fetched exactly once, and each read fails
+   * open independently via {@link tryRead} — a corrupt value or a
+   * rejected read degrades only that dimension to undefined/empty, so
+   * it can't discard state already read from another key (a benched
+   * model with a garbage headers value still reports `benchedUntil`).
+   * `available` is derived from that same read state using the same
+   * predicates `isAvailable` uses, so the two stay equivalent. The
+   * outer try/catch is a last-resort backstop for anything unexpected;
+   * on total failure it degrades to `{ available: true }`.
+   */
+  async status(
+    modelKey: string,
+    limits?: Limits,
+  ): Promise<Omit<ModelStatus, 'key' | 'provider' | 'modelId'>> {
+    try {
+      const [benchedUntil, snapshot, usage] = await Promise.all([
+        this.tryRead(() => this.readBenchExpiry(modelKey)),
+        this.tryRead(() => this.readHeaderSnapshot(modelKey)),
+        limits !== undefined
+          ? this.tryRead(() => this.readUsage(modelKey))
+          : Promise.resolve(undefined),
+      ]);
+
+      const available =
+        benchedUntil === undefined &&
+        !(snapshot !== undefined && this.headerSnapshotNearLimit(snapshot)) &&
+        !(
+          limits !== undefined &&
+          usage !== undefined &&
+          this.usageNearLimit(usage, limits)
+        );
+
+      const detail: Omit<ModelStatus, 'key' | 'provider' | 'modelId'> = {
+        available,
+      };
+      if (benchedUntil !== undefined) detail.benchedUntil = benchedUntil;
+
+      if (snapshot !== undefined) {
+        const now = Date.now();
+        const requests = this.dimensionStatus(snapshot.requests, now);
+        const tokens = this.dimensionStatus(snapshot.tokens, now);
+        if (requests !== undefined || tokens !== undefined) {
+          detail.headerLimits = {
+            ...(requests !== undefined ? { requests } : {}),
+            ...(tokens !== undefined ? { tokens } : {}),
+          };
+        }
+      }
+
+      if (usage !== undefined) {
+        const now = Date.now();
+        detail.selfCounted = {
+          requestsLastMinute: usage.requests.filter((t) => now - t < MINUTE_MS)
+            .length,
+          requestsLastDay: usage.requests.filter((t) => now - t < DAY_MS)
+            .length,
+          tokensLastMinute: usage.tokens
+            .filter(([t]) => now - t < MINUTE_MS)
+            .reduce((sum, [, n]) => sum + n, 0),
+        };
+      }
+
+      return detail;
+    } catch {
+      // Store failure: report available with no detail, matching
+      // isAvailable's fail-open policy.
+      return { available: true };
+    }
+  }
+
+  /** Map an unexpired stored dimension to its public status shape. */
+  private dimensionStatus(
+    dim: DimensionSnapshot | undefined,
+    now: number,
+  ): { remaining: number; limit?: number; resetsAt: number } | undefined {
+    if (dim === undefined || now >= dim.expiresAt) return undefined;
+    return {
+      remaining: dim.remaining,
+      ...(dim.limit !== undefined ? { limit: dim.limit } : {}),
+      resetsAt: dim.expiresAt,
+    };
+  }
+
+  /** Active bench expiry (epoch ms), or undefined when not benched. */
+  private async readBenchExpiry(modelKey: string): Promise<number | undefined> {
     const raw = await this.store.get(this.benchKey(modelKey));
-    if (raw === null) return false;
+    if (raw === null) return undefined;
     // Belt and braces for stores without real TTL support: the value is
     // the bench expiry timestamp. Unparseable values fail open (not
     // benched), consistent with the store-failure policy in isAvailable.
     const expiresAt = Number(raw);
-    return Number.isFinite(expiresAt) && Date.now() < expiresAt;
+    if (!Number.isFinite(expiresAt) || Date.now() >= expiresAt) {
+      return undefined;
+    }
+    return expiresAt;
   }
 
-  private async isNearHeaderLimit(modelKey: string): Promise<boolean> {
+  /**
+   * Parse and validate the stored header snapshot. Store values are
+   * untrusted (same policy as `readUsage`): a parsed value that isn't a
+   * non-null object degrades to no snapshot; each of `requests`/`tokens`
+   * is kept only when it is a non-null object with finite-number
+   * `remaining` and `expiresAt` (a non-finite `limit` is dropped, not
+   * the whole dimension). If neither dimension survives, returns
+   * `undefined` — treated as "no snapshot" by callers.
+   */
+  private async readHeaderSnapshot(
+    modelKey: string,
+  ): Promise<HeaderSnapshot | undefined> {
     const raw = await this.store.get(this.headersKey(modelKey));
-    if (raw === null) return false;
-    const snapshot = JSON.parse(raw) as HeaderSnapshot;
+    if (raw === null) return undefined;
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null) return undefined;
+    const candidate = parsed as Partial<Record<keyof HeaderSnapshot, unknown>>;
+
+    const snapshot: HeaderSnapshot = {};
+    const requests = this.parseDimensionSnapshot(candidate.requests);
+    if (requests !== undefined) snapshot.requests = requests;
+    const tokens = this.parseDimensionSnapshot(candidate.tokens);
+    if (tokens !== undefined) snapshot.tokens = tokens;
+
+    return snapshot.requests !== undefined || snapshot.tokens !== undefined
+      ? snapshot
+      : undefined;
+  }
+
+  /** Validate a single stored dimension; drop it (return undefined) if malformed. */
+  private parseDimensionSnapshot(
+    value: unknown,
+  ): DimensionSnapshot | undefined {
+    if (typeof value !== 'object' || value === null) return undefined;
+    const candidate = value as Partial<
+      Record<keyof DimensionSnapshot, unknown>
+    >;
+    if (
+      !isFiniteNumber(candidate.remaining) ||
+      !isFiniteNumber(candidate.expiresAt)
+    ) {
+      return undefined;
+    }
+    const dimension: DimensionSnapshot = {
+      remaining: candidate.remaining,
+      expiresAt: candidate.expiresAt,
+    };
+    if (isFiniteNumber(candidate.limit)) dimension.limit = candidate.limit;
+    return dimension;
+  }
+
+  private headerSnapshotNearLimit(snapshot: HeaderSnapshot): boolean {
     const now = Date.now();
     // Each dimension keeps its own expiration so a fast-resetting,
     // non-limiting dimension can't wipe out a still-exhausted one.
@@ -117,11 +288,7 @@ export class LimitTracker {
     return remaining / limit <= this.threshold;
   }
 
-  private async isNearDeclaredLimit(
-    modelKey: string,
-    limits: Limits,
-  ): Promise<boolean> {
-    const usage = await this.readUsage(modelKey);
+  private usageNearLimit(usage: UsageState, limits: Limits): boolean {
     const now = Date.now();
 
     if (limits.requestsPerMinute !== undefined) {
@@ -194,12 +361,12 @@ export class LimitTracker {
       };
     }
     // Keep the snapshot around until the *slowest* dimension resets;
-    // each dimension expires individually in isNearHeaderLimit.
+    // each dimension expires individually in headerSnapshotNearLimit.
     const ttl = Math.max(
       (snapshot.requests?.expiresAt ?? 0) - now,
       (snapshot.tokens?.expiresAt ?? 0) - now,
     );
-    if (ttl <= 0) return;
+    if (!Number.isFinite(ttl) || ttl <= 0) return;
     await this.store.set(
       this.headersKey(modelKey),
       JSON.stringify(snapshot),
@@ -256,13 +423,29 @@ export class LimitTracker {
     return next;
   }
 
+  /**
+   * Parse and validate stored usage state. Store values are untrusted
+   * (they may be shared with other processes, or hand-edited): any
+   * non-finite or malformed entry is dropped rather than propagated,
+   * so a single corrupt element can't turn `tokensLastMinute` into a
+   * non-numeric value or otherwise corrupt limit checks. A value that
+   * parses but isn't a `{ requests, tokens }`-shaped object (or is
+   * `null`) degrades to empty usage, matching the store-failure
+   * fail-open policy.
+   */
   private async readUsage(modelKey: string): Promise<UsageState> {
     const raw = await this.store.get(this.usageKey(modelKey));
     if (raw === null) return { requests: [], tokens: [] };
-    const parsed = JSON.parse(raw) as Partial<UsageState>;
+    const parsed: unknown = JSON.parse(raw);
+    const candidate: Partial<UsageState> =
+      typeof parsed === 'object' && parsed !== null ? parsed : {};
     return {
-      requests: Array.isArray(parsed.requests) ? parsed.requests : [],
-      tokens: Array.isArray(parsed.tokens) ? parsed.tokens : [],
+      requests: Array.isArray(candidate.requests)
+        ? candidate.requests.filter(isFiniteNumber)
+        : [],
+      tokens: Array.isArray(candidate.tokens)
+        ? candidate.tokens.filter(isFiniteTokenPair)
+        : [],
     };
   }
 
