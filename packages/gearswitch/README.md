@@ -24,7 +24,7 @@ try {
 `gearswitch` replaces that with one drop-in model:
 
 ```ts
-const model = createResilient({
+const model = gearswitch({
   models: [
     { model: groq('llama-3.3-70b-versatile') },
     { model: openai('gpt-4o-mini') },
@@ -61,11 +61,11 @@ The returned model mirrors the specification version of the models it wraps — 
 
 ```ts
 import { generateText } from 'ai';
-import { createResilient } from 'gearswitch';
+import { gearswitch } from 'gearswitch';
 import { groq } from '@ai-sdk/groq';
 import { google } from '@ai-sdk/google';
 
-const model = createResilient({
+const model = gearswitch({
   models: [
     {
       model: groq('llama-3.3-70b-versatile'),
@@ -83,7 +83,7 @@ Models are tried in the order you configure them. The first model is the primary
 ## Options
 
 ```ts
-createResilient({
+gearswitch({
   models, // required: [{ model, limits? }, ...]
   store: memoryStore(), // default; pluggable (Redis/KV)
   threshold: 0.1, // skip a model when <10% of a known limit remains
@@ -158,7 +158,7 @@ Store failures never break your calls: if the store throws, models are assumed a
 
 ## API
 
-Beyond `createResilient`, these building blocks are exported:
+Beyond `gearswitch`, these building blocks are exported:
 
 | Export                                                                                                                                           | Kind     | Purpose                                                                                                                                                     |
 | ------------------------------------------------------------------------------------------------------------------------------------------------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |

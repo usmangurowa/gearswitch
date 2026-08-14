@@ -2,7 +2,7 @@
 // 'ai/test' (ai v5 dev dep) only produces v2 models, so v3 models are
 // hand-rolled structural mocks here.
 import { describe, expect, it } from 'vitest';
-import { createResilient } from '../src/index';
+import { gearswitch } from '../src/index';
 import type { AnyLanguageModel, FallbackInfo } from '../src/index';
 
 /** Nested usage shape introduced by LanguageModelV3 (no top-level totalTokens). */
@@ -96,7 +96,7 @@ async function readAll(
 
 describe('provider-spec v3 support', () => {
   it('mirrors the wrapped models specification version', () => {
-    const v3 = createResilient({ models: [{ model: mockV3Model() }] });
+    const v3 = gearswitch({ models: [{ model: mockV3Model() }] });
     expect(v3.specificationVersion).toBe('v3');
   });
 
@@ -106,7 +106,7 @@ describe('provider-spec v3 support', () => {
       specificationVersion: 'v2',
     } as unknown as AnyLanguageModel;
     expect(() =>
-      createResilient({
+      gearswitch({
         models: [{ model: mockV3Model() }, { model: v2Model }],
       }),
     ).toThrow(/same specification version.*v2, v3/);
@@ -114,7 +114,7 @@ describe('provider-spec v3 support', () => {
 
   it('passes v3 generate results through unchanged', async () => {
     const usage = v3Usage(11, 22);
-    const model = createResilient({
+    const model = gearswitch({
       models: [
         {
           model: mockV3Model({
@@ -146,7 +146,7 @@ describe('provider-spec v3 support', () => {
       modelId: 'model-b',
       doGenerate: () => Promise.resolve(v3GenerateResult('from B')),
     });
-    const model = createResilient({
+    const model = gearswitch({
       models: [
         { model: primary, limits: { tokensPerMinute: 100 } },
         { model: secondary },
@@ -178,7 +178,7 @@ describe('provider-spec v3 support', () => {
       modelId: 'model-b',
       doStream: () => Promise.resolve(v3StreamResult('from B')),
     });
-    const model = createResilient({
+    const model = gearswitch({
       models: [
         { model: primary, limits: { tokensPerMinute: 100 } },
         { model: secondary },
@@ -221,7 +221,7 @@ describe('provider-spec v3 support', () => {
       provider: 'mock-b',
       modelId: 'model-b',
     });
-    const model = createResilient({
+    const model = gearswitch({
       models: [{ model: primary }, { model: secondary }],
       onFallback: (info) => fallbacks.push(info),
     });

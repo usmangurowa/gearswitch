@@ -3,7 +3,11 @@ import type { LanguageModelV2 } from '@ai-sdk/provider';
 import { generateText } from 'ai';
 import { MockLanguageModelV2 } from 'ai/test';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AllModelsExhaustedError, createResilient } from '../src/index';
+import {
+  AllModelsExhaustedError,
+  createResilient,
+  gearswitch,
+} from '../src/index';
 import type { FallbackInfo, Store } from '../src/index';
 
 type GenerateResult = Awaited<ReturnType<LanguageModelV2['doGenerate']>>;
@@ -56,7 +60,7 @@ describe('ResilientLanguageModel doGenerate', () => {
       modelId: 'model-b',
       doGenerate: async () => okResult('from B'),
     });
-    const model = createResilient({
+    const model = gearswitch({
       models: [{ model: primary }, { model: secondary }],
     });
 
@@ -71,9 +75,13 @@ describe('ResilientLanguageModel doGenerate', () => {
       provider: 'mock-a',
       modelId: 'model-a',
     });
-    const model = createResilient({ models: [{ model: primary }] });
+    const model = gearswitch({ models: [{ model: primary }] });
     expect(model.provider).toBe('gearswitch');
     expect(model.modelId).toBe('model-a');
+  });
+
+  it('exports createResilient as a deprecated alias of gearswitch', () => {
+    expect(createResilient).toBe(gearswitch);
   });
 
   it('falls back to the next model on 429 and fires callbacks', async () => {
@@ -91,7 +99,7 @@ describe('ResilientLanguageModel doGenerate', () => {
       modelId: 'model-b',
       doGenerate: async () => okResult('from B'),
     });
-    const model = createResilient({
+    const model = gearswitch({
       models: [{ model: primary }, { model: secondary }],
       onFallback: (info) => fallbacks.push(info),
       onError: (error, modelId) => errors.push({ error, modelId }),
@@ -120,7 +128,7 @@ describe('ResilientLanguageModel doGenerate', () => {
       modelId: 'model-b',
       doGenerate: async () => okResult('from B'),
     });
-    const model = createResilient({
+    const model = gearswitch({
       models: [{ model: primary }, { model: secondary }],
       cooldown: 30_000,
     });
@@ -159,7 +167,7 @@ describe('ResilientLanguageModel doGenerate', () => {
       modelId: 'model-b',
       doGenerate: async () => okResult('from B'),
     });
-    const model = createResilient({
+    const model = gearswitch({
       models: [{ model: primary }, { model: secondary }],
       cooldown: 60_000,
     });
@@ -184,7 +192,7 @@ describe('ResilientLanguageModel doGenerate', () => {
       modelId: 'model-b',
       doGenerate: async () => okResult('from B'),
     });
-    const model = createResilient({
+    const model = gearswitch({
       models: [{ model: primary }, { model: secondary }],
     });
 
@@ -209,7 +217,7 @@ describe('ResilientLanguageModel doGenerate', () => {
       modelId: 'model-b',
       doGenerate: async () => okResult('from B'),
     });
-    const model = createResilient({
+    const model = gearswitch({
       models: [{ model: primary }, { model: secondary }],
       onFallback: (info) => fallbacks.push(info),
     });
@@ -238,7 +246,7 @@ describe('ResilientLanguageModel doGenerate', () => {
       modelId: 'model-b',
       doGenerate: async () => okResult('from B'),
     });
-    const model = createResilient({
+    const model = gearswitch({
       models: [
         { model: primary, limits: { requestsPerMinute: 2 } },
         { model: secondary },
@@ -281,7 +289,7 @@ describe('ResilientLanguageModel doGenerate', () => {
       modelId: 'model-b',
       doGenerate: async () => okResult('from B'),
     });
-    const model = createResilient({
+    const model = gearswitch({
       models: [{ model: primary }, { model: secondary }],
       threshold: 0.1,
     });
@@ -313,7 +321,7 @@ describe('ResilientLanguageModel doGenerate', () => {
       modelId: 'model-b',
       doGenerate: async () => okResult('from B'),
     });
-    const model = createResilient({
+    const model = gearswitch({
       models: [
         { model: primary, limits: { requestsPerMinute: 1 } },
         { model: secondary, limits: { requestsPerMinute: 1 } },
@@ -346,7 +354,7 @@ describe('ResilientLanguageModel doGenerate', () => {
         throw apiError(503);
       },
     });
-    const model = createResilient({
+    const model = gearswitch({
       models: [{ model: primary }, { model: secondary }],
     });
 
@@ -394,7 +402,7 @@ describe('ResilientLanguageModel doGenerate', () => {
       modelId: 'model-b',
       doGenerate: async () => okResult('from B'),
     });
-    const model = createResilient({
+    const model = gearswitch({
       models: [
         { model: primary, limits: { requestsPerMinute: 1 } },
         { model: secondary },
@@ -431,7 +439,7 @@ describe('ResilientLanguageModel doGenerate', () => {
       modelId: 'model-a',
       doGenerate: async () => okResult('one'),
     });
-    const model = createResilient({
+    const model = gearswitch({
       models: [{ model: primary, limits: { requestsPerMinute: 1 } }],
       store,
     });
@@ -449,6 +457,6 @@ describe('ResilientLanguageModel doGenerate', () => {
   });
 
   it('requires at least one model', () => {
-    expect(() => createResilient({ models: [] })).toThrow(/at least one model/);
+    expect(() => gearswitch({ models: [] })).toThrow(/at least one model/);
   });
 });

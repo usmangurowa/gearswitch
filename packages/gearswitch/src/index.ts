@@ -38,7 +38,7 @@ const DEFAULT_COOLDOWN_MS = 60_000;
  * `generateObject`, and `streamObject` on either SDK major. Mixing spec
  * versions in one chain throws.
  */
-export function createResilient<Version extends SpecificationVersion>(
+export function gearswitch<Version extends SpecificationVersion>(
   options: ResilientOptions<Version>,
 ): AnyLanguageModel<Version> {
   const tracker = new LimitTracker({
@@ -55,3 +55,10 @@ export function createResilient<Version extends SpecificationVersion>(
     ...(options.onError !== undefined ? { onError: options.onError } : {}),
   }) as unknown as AnyLanguageModel<Version>;
 }
+
+/**
+ * Alias of {@link gearswitch} for painless migration from `ai-resilient`.
+ *
+ * @deprecated Use {@link gearswitch} instead.
+ */
+export const createResilient = gearswitch;

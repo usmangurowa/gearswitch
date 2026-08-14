@@ -25,11 +25,11 @@ A wrapper SDK for the Vercel AI SDK (v5) that:
 ## Public API
 
 ```ts
-import { createResilient, memoryStore } from 'gearswitch';
+import { gearswitch, memoryStore } from 'gearswitch';
 import { groq } from '@ai-sdk/groq';
 import { google } from '@ai-sdk/google';
 
-const model = createResilient({
+const model = gearswitch({
   models: [
     { model: groq('llama-3.3-70b'), limits: { requestsPerMinute: 30 } },
     { model: google('gemini-2.0-flash') },
@@ -44,7 +44,7 @@ const model = createResilient({
 const { text } = await generateText({ model, prompt: '...' });
 ```
 
-- `createResilient` returns an object implementing `LanguageModelV2`, so it works transparently with `generateText`, `streamText`, `generateObject`, `streamObject`.
+- `gearswitch` returns an object implementing `LanguageModelV2`, so it works transparently with `generateText`, `streamText`, `generateObject`, `streamObject`.
 - Per-model config: `{ model: LanguageModelV2, limits?: { requestsPerMinute?, requestsPerDay?, tokensPerMinute? } }`.
 - Declared `limits` enable self-counted tracking when the provider exposes no headers.
 

@@ -7,7 +7,7 @@ import type {
 import { streamText } from 'ai';
 import { MockLanguageModelV2, simulateReadableStream } from 'ai/test';
 import { describe, expect, it } from 'vitest';
-import { createResilient } from '../src/index';
+import { gearswitch } from '../src/index';
 import type { FallbackInfo } from '../src/index';
 import { AllModelsExhaustedError } from '../src/index';
 
@@ -70,7 +70,7 @@ describe('ResilientLanguageModel doStream', () => {
       modelId: 'model-b',
       doStream: async () => streamOf(textChunks('Hello from B')),
     });
-    const model: LanguageModelV2 = createResilient({
+    const model: LanguageModelV2 = gearswitch({
       models: [{ model: primary }, { model: secondary }],
     });
 
@@ -93,7 +93,7 @@ describe('ResilientLanguageModel doStream', () => {
       modelId: 'model-b',
       doStream: async () => streamOf(textChunks('Hello from B')),
     });
-    const model: LanguageModelV2 = createResilient({
+    const model: LanguageModelV2 = gearswitch({
       models: [{ model: primary }, { model: secondary }],
       onFallback: (info) => fallbacks.push(info),
     });
@@ -121,7 +121,7 @@ describe('ResilientLanguageModel doStream', () => {
       modelId: 'model-b',
       doStream: async () => streamOf(textChunks('Hello from B')),
     });
-    const model: LanguageModelV2 = createResilient({
+    const model: LanguageModelV2 = gearswitch({
       models: [{ model: primary }, { model: secondary }],
       onFallback: (info) => fallbacks.push(info),
     });
@@ -159,7 +159,7 @@ describe('ResilientLanguageModel doStream', () => {
       modelId: 'model-b',
       doStream: async () => streamOf(textChunks('Hello from B')),
     });
-    const model: LanguageModelV2 = createResilient({
+    const model: LanguageModelV2 = gearswitch({
       models: [{ model: primary }, { model: secondary }],
     });
 
@@ -201,7 +201,7 @@ describe('ResilientLanguageModel doStream', () => {
       modelId: 'model-b',
       doStream: async () => streamOf(textChunks('Hello from B')),
     });
-    const model: LanguageModelV2 = createResilient({
+    const model: LanguageModelV2 = gearswitch({
       models: [{ model: primary }, { model: secondary }],
     });
 
@@ -223,7 +223,7 @@ describe('ResilientLanguageModel doStream', () => {
       modelId: 'model-b',
       doStream: async () => streamOf(textChunks('Hello from B')),
     });
-    const model: LanguageModelV2 = createResilient({
+    const model: LanguageModelV2 = gearswitch({
       models: [{ model: primary }, { model: secondary }],
     });
 
@@ -248,7 +248,7 @@ describe('ResilientLanguageModel doStream', () => {
       modelId: 'model-b',
       doStream: async () => streamOf(textChunks('Hello from B')),
     });
-    const model: LanguageModelV2 = createResilient({
+    const model: LanguageModelV2 = gearswitch({
       models: [{ model: primary }, { model: secondary }],
     });
 
@@ -273,7 +273,7 @@ describe('ResilientLanguageModel doStream', () => {
       modelId: 'model-b',
       doStream: async () => streamOf([{ type: 'error', error: apiError(503) }]),
     });
-    const model: LanguageModelV2 = createResilient({
+    const model: LanguageModelV2 = gearswitch({
       models: [{ model: primary }, { model: secondary }],
     });
 
@@ -308,7 +308,7 @@ describe('ResilientLanguageModel doStream', () => {
         response: { headers: { 'x-served-by': 'model-b' } },
       }),
     });
-    const model: LanguageModelV2 = createResilient({
+    const model: LanguageModelV2 = gearswitch({
       models: [{ model: primary }, { model: secondary }],
     });
 
@@ -338,7 +338,7 @@ describe('ResilientLanguageModel doStream', () => {
         }),
       }),
     });
-    const model: LanguageModelV2 = createResilient({
+    const model: LanguageModelV2 = gearswitch({
       models: [{ model: primary }],
     });
 
@@ -362,7 +362,7 @@ describe('ResilientLanguageModel doStream', () => {
       modelId: 'model-b',
       doStream: async () => streamOf(textChunks('Hello from B')),
     });
-    const model: LanguageModelV2 = createResilient({
+    const model: LanguageModelV2 = gearswitch({
       models: [{ model: primary }, { model: secondary }],
       cooldown: 60_000,
     });

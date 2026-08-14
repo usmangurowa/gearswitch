@@ -7,7 +7,7 @@ import { generateObject, streamObject } from 'ai';
 import { MockLanguageModelV2, simulateReadableStream } from 'ai/test';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { createResilient } from '../src/index';
+import { gearswitch } from '../src/index';
 
 type GenerateResult = Awaited<ReturnType<LanguageModelV2['doGenerate']>>;
 
@@ -62,7 +62,7 @@ describe('generateObject through the resilient wrapper', () => {
       modelId: 'model-a',
       doGenerate: async () => okResult(JSON_TEXT),
     });
-    const model = createResilient({ models: [{ model: primary }] });
+    const model = gearswitch({ models: [{ model: primary }] });
 
     const result = await generateObject({
       model,
@@ -87,7 +87,7 @@ describe('generateObject through the resilient wrapper', () => {
       modelId: 'model-b',
       doGenerate: async () => okResult(JSON_TEXT),
     });
-    const model = createResilient({
+    const model = gearswitch({
       models: [{ model: primary }, { model: secondary }],
     });
 
@@ -111,7 +111,7 @@ describe('streamObject through the resilient wrapper', () => {
       modelId: 'model-a',
       doStream: async () => streamOf(jsonChunks()),
     });
-    const model = createResilient({ models: [{ model: primary }] });
+    const model = gearswitch({ models: [{ model: primary }] });
 
     const result = streamObject({
       model,
@@ -143,7 +143,7 @@ describe('streamObject through the resilient wrapper', () => {
       modelId: 'model-b',
       doStream: async () => streamOf(jsonChunks()),
     });
-    const model = createResilient({
+    const model = gearswitch({
       models: [{ model: primary }, { model: secondary }],
     });
 
