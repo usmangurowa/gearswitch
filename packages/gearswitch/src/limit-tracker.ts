@@ -27,6 +27,20 @@ interface HeaderSnapshot {
   tokens?: DimensionSnapshot | undefined;
 }
 
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+/** A stored `[timestamp, tokenCount]` pair with both members numeric and finite. */
+function isFiniteTokenPair(value: unknown): value is [number, number] {
+  return (
+    Array.isArray(value) &&
+    value.length === 2 &&
+    isFiniteNumber(value[0]) &&
+    isFiniteNumber(value[1])
+  );
+}
+
 export interface RecordSuccessInput {
   provider: string;
   headers?: Record<string, string> | undefined;
@@ -290,7 +304,7 @@ export class LimitTracker {
       (snapshot.requests?.expiresAt ?? 0) - now,
       (snapshot.tokens?.expiresAt ?? 0) - now,
     );
-    if (ttl <= 0) return;
+    if (!Number.isFinite(ttl) || ttl <= 0) return;
     await this.store.set(
       this.headersKey(modelKey),
       JSON.stringify(snapshot),
@@ -347,13 +361,29 @@ export class LimitTracker {
     return next;
   }
 
+  /**
+   * Parse and validate stored usage state. Store values are untrusted
+   * (they may be shared with other processes, or hand-edited): any
+   * non-finite or malformed entry is dropped rather than propagated,
+   * so a single corrupt element can't turn `tokensLastMinute` into a
+   * non-numeric value or otherwise corrupt limit checks. A value that
+   * parses but isn't a `{ requests, tokens }`-shaped object (or is
+   * `null`) degrades to empty usage, matching the store-failure
+   * fail-open policy.
+   */
   private async readUsage(modelKey: string): Promise<UsageState> {
     const raw = await this.store.get(this.usageKey(modelKey));
     if (raw === null) return { requests: [], tokens: [] };
-    const parsed = JSON.parse(raw) as Partial<UsageState>;
+    const parsed: unknown = JSON.parse(raw);
+    const candidate: Partial<UsageState> =
+      typeof parsed === 'object' && parsed !== null ? parsed : {};
     return {
-      requests: Array.isArray(parsed.requests) ? parsed.requests : [],
-      tokens: Array.isArray(parsed.tokens) ? parsed.tokens : [],
+      requests: Array.isArray(candidate.requests)
+        ? candidate.requests.filter(isFiniteNumber)
+        : [],
+      tokens: Array.isArray(candidate.tokens)
+        ? candidate.tokens.filter(isFiniteTokenPair)
+        : [],
     };
   }
 

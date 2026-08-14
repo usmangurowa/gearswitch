@@ -12,7 +12,7 @@ export function redisStore(redis: Redis): Store {
       return redis.get(key);
     },
     async set(key, value, ttlMs) {
-      if (ttlMs !== undefined) {
+      if (ttlMs !== undefined && Number.isFinite(ttlMs)) {
         // PX must be a positive integer; guard sub-millisecond TTLs.
         await redis.set(key, value, 'PX', Math.max(1, Math.round(ttlMs)));
       } else {

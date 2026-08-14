@@ -60,6 +60,19 @@ describe('redisStore', () => {
     expect(setCalls[1]?.ttl).toBe(1501);
   });
 
+  it('omits PX for non-finite ttlMs and still stores the value', async () => {
+    const { client, setCalls } = fakeRedis();
+    const store = redisStore(client as unknown as Redis);
+    await store.set('a', '1', NaN);
+    await store.set('b', '2', Infinity);
+    expect(setCalls).toEqual([
+      { key: 'a', value: '1', mode: undefined, ttl: undefined },
+      { key: 'b', value: '2', mode: undefined, ttl: undefined },
+    ]);
+    expect(await store.get('a')).toBe('1');
+    expect(await store.get('b')).toBe('2');
+  });
+
   it('satisfies LimitTracker as the real consumer', async () => {
     const { client } = fakeRedis();
     const tracker = new LimitTracker({

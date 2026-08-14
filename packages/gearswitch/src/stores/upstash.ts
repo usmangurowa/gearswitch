@@ -14,7 +14,7 @@ export function upstashStore(redis: Redis): Store {
       return typeof value === 'string' ? value : JSON.stringify(value);
     },
     async set(key, value, ttlMs) {
-      if (ttlMs !== undefined) {
+      if (ttlMs !== undefined && Number.isFinite(ttlMs)) {
         await redis.set(key, value, { px: Math.max(1, Math.round(ttlMs)) });
       } else {
         await redis.set(key, value);

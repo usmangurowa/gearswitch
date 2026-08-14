@@ -55,6 +55,19 @@ describe('upstashStore', () => {
     expect(setCalls[0]?.opts).toEqual({ px: 1 });
   });
 
+  it('omits px for non-finite ttlMs and still stores the value', async () => {
+    const { client, setCalls } = fakeUpstash();
+    const store = upstashStore(client as unknown as Redis);
+    await store.set('a', '1', NaN);
+    await store.set('b', '2', Infinity);
+    expect(setCalls).toEqual([
+      { key: 'a', value: '1', opts: undefined },
+      { key: 'b', value: '2', opts: undefined },
+    ]);
+    expect(await store.get('a')).toBe('1');
+    expect(await store.get('b')).toBe('2');
+  });
+
   it('normalizes JSON-parsed values back to strings', async () => {
     const { client, map } = fakeUpstash();
     const store = upstashStore(client as unknown as Redis);
