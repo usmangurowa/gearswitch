@@ -1,0 +1,41 @@
+name: Compat smoke
+
+on:
+  pull_request:
+    branches: ["*"]
+    paths:
+      - "packages/gearswitch/**"
+      - ".github/workflows/compat.yml"
+  push:
+    branches: ["main"]
+    paths:
+      - "packages/gearswitch/**"
+      - ".github/workflows/compat.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+env:
+  FORCE_COLOR: 3
+  TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+
+jobs:
+  compat-smoke:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        major: [ai-v5, ai-v6, ai-v7]
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup
+        uses: ./tooling/github/setup
+
+      - name: Compat smoke (${{ matrix.major }})
+        run: bash packages/gearswitch/compat-fixtures/run.sh ${{ matrix.major }}

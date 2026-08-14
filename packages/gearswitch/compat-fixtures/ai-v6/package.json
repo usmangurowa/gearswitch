@@ -1,0 +1,10 @@
+{
+  "name": "gearswitch-compat-ai-v6",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "ai": "^6",
+    "gearswitch": "file:PLACEHOLDER_TARBALL",
+    "typescript": "^5.5.0"
+  }
+}

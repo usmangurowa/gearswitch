@@ -3,7 +3,12 @@ import prettier from 'eslint-config-prettier';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist/', 'coverage/', 'node_modules/'] },
+  {
+    // compat-fixtures/ holds standalone consumer packages (each with its own
+    // package.json/tsconfig.json), installed and type-checked independently
+    // via compat-fixtures/run.sh — not part of this package's own project.
+    ignores: ['dist/', 'coverage/', 'node_modules/', 'compat-fixtures/'],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   {
