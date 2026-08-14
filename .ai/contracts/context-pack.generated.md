@@ -1173,6 +1173,7 @@ router, or auth adapter. Use the matching `.ai/skills/*` procedure.
 | `@turbo/assets` | `packages/assets` | `./fonts/*` |
 | `@turbo/auth` | `packages/auth` | `.`, `./middleware`, `./client`, `./env`, `./trusted-origins` |
 | `@turbo/db` | `packages/db` | `.`, `./client`, `./schema` |
+| `gearswitch` | `packages/gearswitch` | `.`, `./redis`, `./upstash` |
 | `@turbo/jobs` | `packages/jobs` | `.`, `./tasks/*` |
 | `@turbo/mail` | `packages/mail` | `.`, `./client`, `./templates/*` |
 | `@turbo/shared` | `packages/shared` | `.`, `./constants`, `./env` |
@@ -1205,6 +1206,7 @@ router, or auth adapter. Use the matching `.ai/skills/*` procedure.
 - `@turbo/assets`
 - `@turbo/auth`
 - `@turbo/db`
+- `gearswitch`
 - `@turbo/jobs`
 - `@turbo/mail`
 - `@turbo/shared`
@@ -1230,6 +1232,7 @@ router, or auth adapter. Use the matching `.ai/skills/*` procedure.
 | `@turbo/assets` | `packages/assets` | None |
 | `@turbo/auth` | `packages/auth` | `@turbo/db`, `@turbo/eslint-config`, `@turbo/mail`, `@turbo/prettier-config`, `@turbo/shared`, `@turbo/tsconfig` |
 | `@turbo/db` | `packages/db` | `@turbo/eslint-config`, `@turbo/prettier-config`, `@turbo/shared`, `@turbo/tsconfig` |
+| `gearswitch` | `packages/gearswitch` | None |
 | `@turbo/jobs` | `packages/jobs` | `@turbo/eslint-config`, `@turbo/mail`, `@turbo/prettier-config`, `@turbo/tsconfig` |
 | `@turbo/mail` | `packages/mail` | `@turbo/eslint-config`, `@turbo/prettier-config`, `@turbo/tsconfig` |
 | `@turbo/shared` | `packages/shared` | `@turbo/eslint-config`, `@turbo/prettier-config`, `@turbo/tsconfig` |

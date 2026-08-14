@@ -13,6 +13,7 @@
 - `@turbo/assets`
 - `@turbo/auth`
 - `@turbo/db`
+- `gearswitch`
 - `@turbo/jobs`
 - `@turbo/mail`
 - `@turbo/shared`
@@ -38,6 +39,7 @@
 | `@turbo/assets` | `packages/assets` | None |
 | `@turbo/auth` | `packages/auth` | `@turbo/db`, `@turbo/eslint-config`, `@turbo/mail`, `@turbo/prettier-config`, `@turbo/shared`, `@turbo/tsconfig` |
 | `@turbo/db` | `packages/db` | `@turbo/eslint-config`, `@turbo/prettier-config`, `@turbo/shared`, `@turbo/tsconfig` |
+| `gearswitch` | `packages/gearswitch` | None |
 | `@turbo/jobs` | `packages/jobs` | `@turbo/eslint-config`, `@turbo/mail`, `@turbo/prettier-config`, `@turbo/tsconfig` |
 | `@turbo/mail` | `packages/mail` | `@turbo/eslint-config`, `@turbo/prettier-config`, `@turbo/tsconfig` |
 | `@turbo/shared` | `packages/shared` | `@turbo/eslint-config`, `@turbo/prettier-config`, `@turbo/tsconfig` |
