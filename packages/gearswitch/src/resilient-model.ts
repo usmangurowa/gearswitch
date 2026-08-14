@@ -45,6 +45,15 @@ const PRELUDE_PART_TYPES = new Set([
 ]);
 
 /**
+ * Cross-bundle brand key. `Symbol.for` uses the global symbol registry,
+ * so any bundle (or duplicate install of this package) that calls
+ * `Symbol.for('gearswitch.model')` gets the exact same symbol value.
+ * `gearswitchStatus` uses this to recognize an instance created by a
+ * different bundle's `gearswitch()`, where `instanceof` would fail.
+ */
+const GEARSWITCH_BRAND = Symbol.for('gearswitch.model');
+
+/**
  * Extract a token count from a usage field that may be a v2 flat number
  * or a v3 nested `{ total: number }` object.
  */
@@ -126,6 +135,11 @@ export class ResilientLanguageModel {
     this.tracker = options.tracker;
     this.onFallback = options.onFallback;
     this.onError = options.onError;
+    // Hidden (non-enumerable) brand so gearswitchStatus can recognize
+    // this model even from a different bundle than the one that
+    // created it; doesn't leak into property iteration, JSON.stringify,
+    // or spreads.
+    Object.defineProperty(this, GEARSWITCH_BRAND, { value: true });
   }
 
   /**

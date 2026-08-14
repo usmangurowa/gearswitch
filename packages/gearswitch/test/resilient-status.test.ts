@@ -208,6 +208,41 @@ describe('gearswitchStatus', () => {
     expect(() => gearswitchStatus(plain)).toThrow(/gearswitch/);
   });
 
+  it('resolves for a cross-bundle stand-in that carries the gearswitch brand', async () => {
+    const primary = new MockLanguageModelV2({
+      provider: 'mock-a',
+      modelId: 'model-a',
+    });
+    const model = gearswitch({ models: [{ model: primary }] });
+    const realStatus = (
+      model as unknown as {
+        status: () => Promise<Awaited<ReturnType<typeof gearswitchStatus>>>;
+      }
+    ).status.bind(model);
+
+    // Simulate a model constructed by a different bundle's gearswitch():
+    // same brand symbol (Symbol.for is a global registry, so any bundle
+    // gets the identical value), but not `instanceof
+    // ResilientLanguageModel` from this bundle's perspective.
+    const foreign = {
+      [Symbol.for('gearswitch.model')]: true,
+      status: realStatus,
+    };
+
+    const status = await gearswitchStatus(
+      foreign as unknown as LanguageModelV2,
+    );
+    expect(status.models).toHaveLength(1);
+    expect(status.models[0]?.modelId).toBe('model-a');
+  });
+
+  it('still rejects a plain object with a status method but no brand', () => {
+    const fake = { status: async () => ({ models: [] }) };
+    expect(() => gearswitchStatus(fake as unknown as LanguageModelV2)).toThrow(
+      TypeError,
+    );
+  });
+
   it('sees bookkeeping from a call made immediately before (read-your-writes)', async () => {
     const primary = new MockLanguageModelV2({
       provider: 'mock-a',
@@ -308,6 +343,49 @@ describe('gearswitchStatus', () => {
         available: false,
         benchedUntil,
       });
+    });
+
+    it('drops non-finite token entries from a corrupted usage payload and stays available', async () => {
+      const { store } = countingStore();
+      await store.set(
+        'gearswitch:usage:mock-a:model-a',
+        JSON.stringify({ requests: [], tokens: [[Date.now(), 'oops']] }),
+      );
+      const primary = new MockLanguageModelV2({
+        provider: 'mock-a',
+        modelId: 'model-a',
+      });
+      const model = gearswitch({
+        models: [{ model: primary, limits: { requestsPerMinute: 10 } }],
+        store,
+      });
+
+      const status = await gearswitchStatus(model);
+      expect(status.models[0]?.available).toBe(true);
+      expect(status.models[0]?.selfCounted?.tokensLastMinute).toBe(0);
+    });
+
+    it('degrades to empty usage for a fully malformed payload without throwing', async () => {
+      for (const garbage of ['[]', JSON.stringify({ requests: 'x' })]) {
+        const { store } = countingStore();
+        await store.set('gearswitch:usage:mock-a:model-a', garbage);
+        const primary = new MockLanguageModelV2({
+          provider: 'mock-a',
+          modelId: 'model-a',
+        });
+        const model = gearswitch({
+          models: [{ model: primary, limits: { requestsPerMinute: 10 } }],
+          store,
+        });
+
+        const status = await gearswitchStatus(model);
+        expect(status.models[0]?.available).toBe(true);
+        expect(status.models[0]?.selfCounted).toEqual({
+          requestsLastMinute: 0,
+          requestsLastDay: 0,
+          tokensLastMinute: 0,
+        });
+      }
     });
   });
 });

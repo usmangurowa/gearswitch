@@ -447,6 +447,7 @@ packages/
   assets/       → Font files
   auth/         → Better Auth configuration
   db/           → Drizzle ORM + Postgres schemas
+  gearswitch/   → Standalone AI SDK resilient-fallback wrapper (published as `gearswitch`)
   jobs/         → Trigger.dev background tasks
   mail/         → Email templates (Resend)
   shared/       → Shared utilities and constants
@@ -461,6 +462,12 @@ tooling/
   typescript/   → Shared tsconfig bases (@turbo/tsconfig)
   vitest/       → Shared Vitest config (@turbo/vitest-config)
 ```
+
+`packages/gearswitch` ships with zero runtime dependencies. `ioredis` and
+`@upstash/redis` are optional peer dependencies used only by its first-party
+serverless store adapters (`gearswitch/redis`, `gearswitch/upstash`) — install
+whichever client you use; the adapters accept an existing instance and never
+construct one themselves.
 
 ## Languages & Frameworks
 

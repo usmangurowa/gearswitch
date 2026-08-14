@@ -147,7 +147,7 @@ const model = gearswitch({ models, store: upstashStore(Redis.fromEnv()) });
 ```
 
 ```ts
-import { Redis } from 'ioredis';
+import Redis from 'ioredis';
 import { redisStore } from 'gearswitch/redis';
 
 const model = gearswitch({
