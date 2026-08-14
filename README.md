@@ -1,6 +1,6 @@
-# Turbo Monorepo
+# gearswitch
 
-A full-stack TypeScript monorepo with Next.js, Expo, and Hono RPC.
+Smart model fallback for the Vercel AI SDK — reactive fallback on rate-limit/transient errors and proactive switching before limits are hit. The publishable library lives in [`packages/gearswitch`](packages/gearswitch); the rest of this monorepo (Next.js web, Expo mobile, Hono server) hosts the product built around it.
 
 ## Tech Stack
 

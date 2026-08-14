@@ -1,0 +1,26 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+  id-token: write # npm provenance
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup
+        uses: ./tooling/github/setup
+
+      # Trusted publishing (OIDC) needs npm >= 11.5.1; Node 22 bundles npm 10
+      - run: npm install -g npm@latest
+
+      - name: Publish gearswitch
+        working-directory: packages/gearswitch
+        run: npm publish --provenance --access public

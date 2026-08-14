@@ -1,5 +1,5 @@
 {
-  "name": "turbo",
+  "name": "gearswitch-monorepo",
   "private": true,
   "engines": {
     "node": "^22.14.0",
@@ -27,7 +27,7 @@
     "format:fix": "turbo run format --continue -- --write --cache --cache-location .cache/.prettiercache",
     "lint": "turbo run lint --continue -- --cache --cache-location .cache/.eslintcache",
     "lint:fix": "turbo run lint --continue -- --fix --cache --cache-location .cache/.eslintcache",
-    "lint:ws": "pnpm dlx sherif@latest",
+    "lint:ws": "pnpm dlx sherif@latest -p gearswitch",
     "postinstall": "pnpm lint:ws",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
