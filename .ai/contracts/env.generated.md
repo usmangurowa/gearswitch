@@ -1,0 +1,87 @@
+# Environment Contract Snapshot
+
+> Generated file. Do not edit by hand.
+> Run `pnpm ai:contracts` to refresh this generated file.
+
+## turbo.json globalEnv
+
+- `APP_URL`
+- `AUTH_SECRET`
+- `EXPO_PUBLIC_API_URL`
+- `EXPO_PUBLIC_POSTHOG_KEY`
+- `EXPO_PUBLIC_SENTRY_DSN`
+- `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+- `EXPO_PUBLIC_SUPABASE_URL`
+- `GITHUB_CLIENT_ID`
+- `GITHUB_CLIENT_SECRET`
+- `GOOGLE_GENERATIVE_AI_API_KEY`
+- `GROQ_API_KEY`
+- `NEXT_PUBLIC_APP_URL`
+- `NEXT_PUBLIC_PORT`
+- `NEXT_PUBLIC_POSTHOG_KEY`
+- `NEXT_PUBLIC_SENTRY_DSN`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `OPENROUTER_API_KEY`
+- `POSTGRES_URL`
+- `POSTHOG_API_KEY`
+- `RESEND_API_KEY`
+- `SENTRY_DSN`
+- `SERVER_PORT`
+- `SERVER_URL`
+- `SUPABASE_JWT_SECRET`
+- `SUPPORT_INBOX_EMAIL`
+- `TRIGGER_SECRET_KEY`
+
+## .env.example variables
+
+- `APP_URL`
+- `AUTH_SECRET`
+- `EXPO_PUBLIC_API_URL`
+- `EXPO_PUBLIC_POSTHOG_KEY`
+- `EXPO_PUBLIC_SENTRY_DSN`
+- `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+- `EXPO_PUBLIC_SUPABASE_URL`
+- `GITHUB_CLIENT_ID`
+- `GITHUB_CLIENT_SECRET`
+- `GOOGLE_GENERATIVE_AI_API_KEY`
+- `GROQ_API_KEY`
+- `NEXT_PUBLIC_APP_URL`
+- `NEXT_PUBLIC_PORT`
+- `NEXT_PUBLIC_POSTHOG_KEY`
+- `NEXT_PUBLIC_SENTRY_DSN`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `OPENROUTER_API_KEY`
+- `POSTGRES_URL`
+- `POSTHOG_API_KEY`
+- `RESEND_API_KEY`
+- `SENTRY_DSN`
+- `SERVER_PORT`
+- `SERVER_URL`
+- `SUPABASE_JWT_SECRET`
+- `SUPPORT_INBOX_EMAIL`
+- `TRIGGER_SECRET_KEY`
+
+## Env validation modules
+
+| File | Variables |
+| --- | --- |
+| apps/server/src/env.ts | `APP_URL`, `PORT`, `POSTGRES_URL`, `RESEND_API_KEY`, `SERVER_PORT`, `SERVER_URL` |
+| apps/web/src/env.ts | `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_PORT`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NODE_ENV`, `POSTGRES_URL` |
+| packages/auth/env.ts | `AUTH_SECRET`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `NODE_ENV`, `SUPABASE_JWT_SECRET` |
+| packages/shared/src/env.ts | None |
+
+## Drift Report
+
+### In turbo.json but missing from .env.example
+
+- None
+
+### In .env.example but missing from turbo.json globalEnv
+
+- None
+
+### Validated in env modules but missing from .env.example
+
+- None

@@ -1,0 +1,92 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "ui": "tui",
+  "tasks": {
+    "topo": {
+      "dependsOn": ["^topo"]
+    },
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [".cache/tsbuildinfo.json", "dist/**"]
+    },
+    "dev": {
+      "dependsOn": ["^dev"],
+      "cache": false,
+      "persistent": false
+    },
+    "format": {
+      "outputs": [".cache/.prettiercache"],
+      "outputLogs": "new-only"
+    },
+    "lint": {
+      "dependsOn": ["^topo", "^build"],
+      "outputs": [".cache/.eslintcache"]
+    },
+    "typecheck": {
+      "dependsOn": ["^topo", "^build"],
+      "outputs": [".cache/tsbuildinfo.json"]
+    },
+    "clean": {
+      "cache": false
+    },
+    "//#clean": {
+      "cache": false
+    },
+    "push": {
+      "cache": false,
+      "interactive": true
+    },
+    "studio": {
+      "cache": false,
+      "persistent": true
+    },
+    "ui-add": {
+      "cache": false,
+      "interactive": true
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    }
+  },
+  "globalEnv": [
+    "SENTRY_DSN",
+    "NEXT_PUBLIC_SENTRY_DSN",
+    "EXPO_PUBLIC_SENTRY_DSN",
+    "POSTHOG_API_KEY",
+    "NEXT_PUBLIC_POSTHOG_KEY",
+    "EXPO_PUBLIC_POSTHOG_KEY",
+    "POSTGRES_URL",
+    "SERVER_PORT",
+    "SERVER_URL",
+    "APP_URL",
+    "NEXT_PUBLIC_APP_URL",
+    "NEXT_PUBLIC_PORT",
+    "AUTH_SECRET",
+    "GITHUB_CLIENT_ID",
+    "GITHUB_CLIENT_SECRET",
+    "SUPABASE_JWT_SECRET",
+    "NEXT_PUBLIC_SUPABASE_URL",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    "RESEND_API_KEY",
+    "SUPPORT_INBOX_EMAIL",
+    "TRIGGER_SECRET_KEY",
+    "EXPO_PUBLIC_SUPABASE_URL",
+    "EXPO_PUBLIC_SUPABASE_ANON_KEY",
+    "EXPO_PUBLIC_API_URL",
+    "GOOGLE_GENERATIVE_AI_API_KEY",
+    "OPENROUTER_API_KEY",
+    "GROQ_API_KEY"
+  ],
+  "globalPassThroughEnv": [
+    "NODE_ENV",
+    "CI",
+    "VERCEL",
+    "VERCEL_ENV",
+    "VERCEL_URL",
+    "npm_lifecycle_event",
+    "npm_package_version",
+    "PORT",
+    "SKIP_ENV_VALIDATION"
+  ]
+}

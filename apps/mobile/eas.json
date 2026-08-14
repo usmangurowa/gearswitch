@@ -1,0 +1,133 @@
+{
+  "cli": {
+    "version": ">= 4.1.2",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "base": {
+      "node": "22.14.0",
+      "pnpm": "10.19.0",
+      "ios": {
+        "resourceClass": "m-medium"
+      }
+    },
+    "development": {
+      "extends": "base",
+      "autoIncrement": true,
+      "channel": "development",
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_PACKAGE_NAME": "com.turbo.dev",
+        "EXPO_PUBLIC_APP_NAME": "Turbo (Dev)"
+      }
+    },
+    "preview": {
+      "extends": "base",
+      "autoIncrement": true,
+      "channel": "preview",
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_PACKAGE_NAME": "com.turbo.preview",
+        "EXPO_PUBLIC_APP_NAME": "Turbo (Preview)"
+      },
+      "ios": {
+        "enterpriseProvisioning": "universal"
+      }
+    },
+    "development-simulator": {
+      "extends": "base",
+      "autoIncrement": true,
+      "channel": "development-simulator",
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_PACKAGE_NAME": "com.turbo.dev",
+        "EXPO_PUBLIC_APP_NAME": "Turbo (Dev)"
+      },
+      "ios": {
+        "simulator": true
+      }
+    },
+    "development-simulator-local": {
+      "extends": "development-simulator",
+      "ios": {
+        "simulator": true,
+        "buildConfiguration": "Debug"
+      }
+    },
+    "preview-simulator": {
+      "extends": "base",
+      "autoIncrement": true,
+      "channel": "preview-simulator",
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_PACKAGE_NAME": "com.turbo.preview",
+        "EXPO_PUBLIC_APP_NAME": "Turbo (Preview)"
+      },
+      "ios": {
+        "simulator": true
+      }
+    },
+    "preview-simulator-local": {
+      "extends": "preview-simulator",
+      "ios": {
+        "simulator": true,
+        "buildConfiguration": "Release"
+      }
+    },
+    "development-android": {
+      "extends": "base",
+      "autoIncrement": true,
+      "channel": "development-android",
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_PACKAGE_NAME": "com.turbo.dev",
+        "EXPO_PUBLIC_APP_NAME": "Turbo (Dev)"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "development-android-local": {
+      "extends": "development-android",
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleDebug"
+      }
+    },
+    "preview-android": {
+      "extends": "base",
+      "autoIncrement": true,
+      "channel": "preview-android",
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_PACKAGE_NAME": "com.turbo.preview",
+        "EXPO_PUBLIC_APP_NAME": "Turbo (Preview)"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "preview-android-local": {
+      "extends": "preview-android",
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease"
+      }
+    },
+    "production": {
+      "extends": "base",
+      "autoIncrement": true,
+      "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_PACKAGE_NAME": "com.turbo.app",
+        "EXPO_PUBLIC_APP_NAME": "Turbo"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

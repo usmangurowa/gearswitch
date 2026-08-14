@@ -1,0 +1,43 @@
+{
+  "name": "@turbo/jobs",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./src/index.ts"
+    },
+    "./tasks/*": {
+      "types": "./dist/tasks/*.d.ts",
+      "default": "./src/tasks/*.ts"
+    }
+  },
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "clean": "git clean -xdf .cache .turbo dist node_modules",
+    "dev": "npx trigger.dev@latest dev",
+    "dev:tsc": "tsc --watch",
+    "format": "prettier --check . --ignore-path ../../.gitignore",
+    "format:fix": "prettier --write . --ignore-path ../../.gitignore",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false",
+    "test": "vitest run --passWithNoTests",
+    "deploy": "npx trigger.dev@latest deploy"
+  },
+  "dependencies": {
+    "@trigger.dev/sdk": "^4.5.6",
+    "@turbo/mail": "workspace:*"
+  },
+  "devDependencies": {
+    "@turbo/eslint-config": "workspace:*",
+    "@turbo/prettier-config": "workspace:*",
+    "@turbo/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "4.1.10"
+  },
+  "prettier": "@turbo/prettier-config"
+}

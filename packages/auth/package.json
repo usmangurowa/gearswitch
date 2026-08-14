@@ -1,0 +1,44 @@
+{
+  "name": "@turbo/auth",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./middleware": "./src/middleware.ts",
+    "./client": "./src/client.ts",
+    "./env": "./env.ts",
+    "./trusted-origins": "./src/trusted-origins.ts"
+  },
+  "license": "MIT",
+  "scripts": {
+    "clean": "git clean -xdf .cache .turbo dist node_modules",
+    "format": "prettier --check . --ignore-path ../../.gitignore",
+    "lint": "eslint",
+    "generate": "dotenv -e ../../.env -- pnpx @better-auth/cli generate --config script/auth-cli.ts --output ../db/src/auth-schema.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@better-auth/api-key": "1.6.23",
+    "@better-auth/expo": "catalog:",
+    "@t3-oss/env-core": "^0.13.11",
+    "@turbo/db": "workspace:*",
+    "@turbo/mail": "workspace:*",
+    "@turbo/shared": "workspace:*",
+    "better-auth": "catalog:",
+    "drizzle-orm": "^0.45.2",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@better-auth/cli": "catalog:",
+    "@turbo/eslint-config": "workspace:*",
+    "@turbo/prettier-config": "workspace:*",
+    "@turbo/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "4.1.10"
+  },
+  "prettier": "@turbo/prettier-config"
+}

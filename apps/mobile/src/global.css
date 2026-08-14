@@ -1,0 +1,8 @@
+@import "tailwindcss";
+@import "uniwind";
+
+/* Import shared theme from monorepo - works for both web and mobile now! */
+@import "@turbo/tailwind-config/theme";
+
+/* Scan monorepo shared UI packages for Tailwind classes */
+@source "../../packages/ui";

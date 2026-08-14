@@ -1,0 +1,25 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "radix-maia",
+  "rsc": true,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "../../tooling/tailwind/theme.css",
+    "baseColor": "neutral",
+    "cssVariables": true
+  },
+  "iconLibrary": "hugeicons",
+  "menuColor": "default",
+  "menuAccent": "subtle",
+  "aliases": {
+    "components": "@turbo/ui/components",
+    "utils": "@turbo/ui/lib/utils",
+    "hooks": "@turbo/ui/hooks",
+    "lib": "@turbo/ui/lib",
+    "ui": "@turbo/ui/components"
+  },
+  "registries": {
+    "@magicui": "https://magicui.design/r/{name}"
+  }
+}
