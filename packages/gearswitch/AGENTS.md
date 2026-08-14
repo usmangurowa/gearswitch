@@ -47,12 +47,24 @@ excluded from the root `sherif` workspace-consistency check for that reason.
 importing the class and using `instanceof`. Keep it that way — importing
 `@ai-sdk/provider` at runtime would introduce a runtime dependency.
 
-### Dual spec-version support (v2/v3)
+### Store adapters
 
-The wrapper supports both `LanguageModelV2` (ai v5) and `LanguageModelV3`
-(ai v6) via the structural `AnyLanguageModel` type in `src/types.ts`. Never
-`import type { LanguageModelV3 }` — it doesn't exist in provider v2, so the
-emitted d.ts would break consumers on ai v5. Related invariants:
+Store adapters live in `src/stores/` and are exposed **only** via subpath
+exports (`gearswitch/redis`, `gearswitch/upstash`) — never re-export
+them from `src/index.ts`, or the root bundle would reference optional
+packages. Adapters import client types **type-only** (erased at build
+time), never construct or close clients (the user owns the connection
+lifecycle), and their client packages are **optional peer dependencies**
+(`peerDependenciesMeta`) plus tsup `external` entries.
+
+### Spec-version support (v2/v3/v4)
+
+The wrapper supports `LanguageModelV2` (ai v5), `LanguageModelV3`
+(ai v6), and `LanguageModelV4` (ai v7) via the structural
+`AnyLanguageModel` type in `src/types.ts`. Never
+`import type { LanguageModelV3 }` or `import type { LanguageModelV4 }` —
+they don't exist in provider v2, so the emitted d.ts would break
+consumers on ai v5. Related invariants:
 
 - `ResilientLanguageModel.specificationVersion` is a **getter** delegating
   to the primary model. Hardcoding `'v2'` makes ai v6 wrap the model in its
@@ -60,11 +72,16 @@ emitted d.ts would break consumers on ai v5. Related invariants:
 - Mixed spec versions in one chain throw at construction.
 - Usage token counts are normalized in `recordSuccess`
   (`extractTotalTokens`): v2 usage is flat numbers with `totalTokens`,
-  v3 usage nests `{ total }` objects with no top-level total.
-- Dev deps stay on `ai@5`/`provider@2`; v3 paths are tested with
-  hand-rolled structural mocks in `test/resilient-v3.test.ts`
+  v3/v4 usage (same nested shape) nests `{ total }` objects with no
+  top-level total.
+- The v4 stream part type `raw` carries no user-visible content and is
+  treated as prelude (`PRELUDE_PART_TYPES`) so a pre-content error after
+  a `raw` part still falls back.
+- Dev deps stay on `ai@5`/`provider@2`; v3 and v4 paths are tested with
+  hand-rolled structural mocks in `test/resilient-v3.test.ts` and
+  `test/resilient-v4.test.ts`
   (`MockLanguageModelV2` was removed in ai v6, and `ai/test` mocks
-  can't represent v3 shapes on v5).
+  can't represent v3/v4 shapes on v5).
 
 ### `exactOptionalPropertyTypes` is on
 
@@ -88,8 +105,12 @@ Any store failure (thrown exception or garbage return value) must degrade to
 "model available / recording skipped", never surface an error to the caller.
 `LimitTracker.isAvailable` wraps all store calls in a `try/catch` and returns
 `true` on failure. `recordSuccess` and `recordRateLimit` swallow store errors
-the same way. The unparseable-bench path in `isBenched` also fails open (treats
-a bad value as "not benched"). **Never let store failures propagate.**
+the same way. The unparseable-bench path in `readBenchExpiry` also fails open
+(treats a bad value as "not benched"). `status()` reads each store key exactly
+once (`readBenchExpiry` / `readHeaderSnapshot` / `usageNearLimit`) and derives
+`available` from that same single-read state, so it stays consistent with
+`isAvailable` without a second round of store reads. **Never let store
+failures propagate.**
 
 ### Streaming commit-before-return invariant
 
