@@ -104,13 +104,30 @@ export class LimitTracker {
   }
 
   /**
+   * Run a single store read for `status()`, degrading a thrown error
+   * to `undefined` so one corrupt/rejected key can't poison the other
+   * dimensions read alongside it in the same `Promise.all`.
+   */
+  private async tryRead<T>(read: () => Promise<T>): Promise<T | undefined> {
+    try {
+      return await read();
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
    * Read-only per-model detail: bench expiry, active header-snapshot
    * dimensions, and (when `limits` is declared) self-counted window
-   * usage. Each store key is fetched exactly once; `available` is
-   * derived from that same single-read state using the same predicates
-   * routing uses, so it stays equivalent to {@link isAvailable} and
-   * consistent with the detail fields. Never throws: on store failure
-   * it degrades to `{ available: true }`.
+   * usage. Each store key is fetched exactly once, and each read fails
+   * open independently via {@link tryRead} — a corrupt value or a
+   * rejected read degrades only that dimension to undefined/empty, so
+   * it can't discard state already read from another key (a benched
+   * model with a garbage headers value still reports `benchedUntil`).
+   * `available` is derived from that same read state using the same
+   * predicates `isAvailable` uses, so the two stay equivalent. The
+   * outer try/catch is a last-resort backstop for anything unexpected;
+   * on total failure it degrades to `{ available: true }`.
    */
   async status(
     modelKey: string,
@@ -118,9 +135,11 @@ export class LimitTracker {
   ): Promise<Omit<ModelStatus, 'key' | 'provider' | 'modelId'>> {
     try {
       const [benchedUntil, snapshot, usage] = await Promise.all([
-        this.readBenchExpiry(modelKey),
-        this.readHeaderSnapshot(modelKey),
-        limits !== undefined ? this.readUsage(modelKey) : undefined,
+        this.tryRead(() => this.readBenchExpiry(modelKey)),
+        this.tryRead(() => this.readHeaderSnapshot(modelKey)),
+        limits !== undefined
+          ? this.tryRead(() => this.readUsage(modelKey))
+          : Promise.resolve(undefined),
       ]);
 
       const available =
@@ -197,12 +216,55 @@ export class LimitTracker {
     return expiresAt;
   }
 
+  /**
+   * Parse and validate the stored header snapshot. Store values are
+   * untrusted (same policy as `readUsage`): a parsed value that isn't a
+   * non-null object degrades to no snapshot; each of `requests`/`tokens`
+   * is kept only when it is a non-null object with finite-number
+   * `remaining` and `expiresAt` (a non-finite `limit` is dropped, not
+   * the whole dimension). If neither dimension survives, returns
+   * `undefined` — treated as "no snapshot" by callers.
+   */
   private async readHeaderSnapshot(
     modelKey: string,
   ): Promise<HeaderSnapshot | undefined> {
     const raw = await this.store.get(this.headersKey(modelKey));
     if (raw === null) return undefined;
-    return JSON.parse(raw) as HeaderSnapshot;
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null) return undefined;
+    const candidate = parsed as Partial<Record<keyof HeaderSnapshot, unknown>>;
+
+    const snapshot: HeaderSnapshot = {};
+    const requests = this.parseDimensionSnapshot(candidate.requests);
+    if (requests !== undefined) snapshot.requests = requests;
+    const tokens = this.parseDimensionSnapshot(candidate.tokens);
+    if (tokens !== undefined) snapshot.tokens = tokens;
+
+    return snapshot.requests !== undefined || snapshot.tokens !== undefined
+      ? snapshot
+      : undefined;
+  }
+
+  /** Validate a single stored dimension; drop it (return undefined) if malformed. */
+  private parseDimensionSnapshot(
+    value: unknown,
+  ): DimensionSnapshot | undefined {
+    if (typeof value !== 'object' || value === null) return undefined;
+    const candidate = value as Partial<
+      Record<keyof DimensionSnapshot, unknown>
+    >;
+    if (
+      !isFiniteNumber(candidate.remaining) ||
+      !isFiniteNumber(candidate.expiresAt)
+    ) {
+      return undefined;
+    }
+    const dimension: DimensionSnapshot = {
+      remaining: candidate.remaining,
+      expiresAt: candidate.expiresAt,
+    };
+    if (isFiniteNumber(candidate.limit)) dimension.limit = candidate.limit;
+    return dimension;
   }
 
   private headerSnapshotNearLimit(snapshot: HeaderSnapshot): boolean {

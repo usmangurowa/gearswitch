@@ -106,11 +106,16 @@ Any store failure (thrown exception or garbage return value) must degrade to
 `LimitTracker.isAvailable` wraps all store calls in a `try/catch` and returns
 `true` on failure. `recordSuccess` and `recordRateLimit` swallow store errors
 the same way. The unparseable-bench path in `readBenchExpiry` also fails open
-(treats a bad value as "not benched"). `status()` reads each store key exactly
-once (`readBenchExpiry` / `readHeaderSnapshot` / `usageNearLimit`) and derives
-`available` from that same single-read state, so it stays consistent with
-`isAvailable` without a second round of store reads. **Never let store
-failures propagate.**
+(treats a bad value as "not benched"), and `readHeaderSnapshot` validates the
+parsed shape the same way `readUsage` does (a malformed dimension is dropped,
+not propagated). `status()` reads each store key exactly once
+(`readBenchExpiry` / `readHeaderSnapshot` / `readUsage`), and each read fails
+open **independently** via a private `tryRead` helper — a corrupt value or a
+rejected read degrades only that dimension, so it can't discard state already
+read from another key (a benched model with corrupt headers still reports
+`benchedUntil`). `available` is derived from that same read state using the
+same predicates as `isAvailable`, so the two stay equivalent without a second
+round of store reads. **Never let store failures propagate.**
 
 ### Streaming commit-before-return invariant
 
