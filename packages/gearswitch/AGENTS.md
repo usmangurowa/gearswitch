@@ -155,6 +155,21 @@ entries in the candidates array):
 - **Retry suppression**: pass `maxRetries: 0` on every `generateText` /
   `streamText` / `generateObject` / `streamObject` call in tests so the SDK's
   own retry loop does not mask fallback behaviour.
+- **Cross-major compat smoke**: `compat-fixtures/` holds one fixture per
+  supported `ai` major (`ai-v5`, `ai-v6`, `ai-v7`), each a tiny consumer with
+  its own `package.json`/`tsconfig.json`/`smoke.mjs`/`smoke-types.ts`. These
+  are NOT vitest and NOT a workspace package (excluded by the root
+  `pnpm-workspace.yaml`'s single-level `packages/*` glob). Run locally with
+  `bash compat-fixtures/run.sh [ai-v5|ai-v6|ai-v7]` (omit the argument for the
+  full matrix). The runner packs the real tarball (`npm pack`) and installs
+  it with `npm` (not `pnpm`, to avoid workspace-linked resolution) into a temp
+  dir outside the repo, then runs a real `generateText` against a hand-rolled
+  structural mock of the matching spec version, resolves the `./redis` and
+  `./upstash` subpath exports, and type-checks the public API surface with
+  `tsc --noEmit`. CI runs this as the `compat-smoke` job
+  (`.github/workflows/compat.yml`) on changes under `packages/gearswitch/**`.
+  Adding a new supported SDK major means adding one fixture dir and one matrix
+  entry; the runner itself does not change.
 
 ## Commit convention
 
